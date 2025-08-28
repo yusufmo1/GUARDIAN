@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60" viewBox="0 0 200 60">
+  <!-- Background -->
+  <rect width="200" height="60" fill="#003f5c" rx="5"/>
+  
+  <!-- Crown icon -->
+  <g transform="translate(10, 15)">
+    <polygon points="15,10 20,5 25,10 30,5 35,10 35,25 15,25" fill="#ffd700" stroke="#fff" stroke-width="1"/>
+    <circle cx="20" cy="12" r="2" fill="#fff"/>
+    <circle cx="25" cy="8" r="2" fill="#fff"/>
+    <circle cx="30" cy="12" r="2" fill="#fff"/>
+  </g>
+  
+  <!-- University text -->
+  <text x="55" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="white">
+    QUEEN MARY
+  </text>
+  <text x="55" y="40" font-family="Arial, sans-serif" font-size="12" fill="white">
+    University of London
+  </text>
+  
+  <!-- Decorative border -->
+  <rect x="2" y="2" width="196" height="56" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1" rx="3"/>
+</svg>

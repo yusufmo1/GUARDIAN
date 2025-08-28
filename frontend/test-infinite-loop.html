@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Infinite Loop Fix</title>
+    <script>
+        // Open the app and monitor console for errors
+        console.log('Opening GUARDIAN app to test infinite loop fix...');
+        
+        setTimeout(() => {
+            window.location.href = 'http://localhost:3000';
+        }, 1000);
+    </script>
+</head>
+<body>
+    <h1>Testing Infinite Loop Fix</h1>
+    <p>Redirecting to GUARDIAN app in 1 second...</p>
+    <p>Check the browser console for any "Maximum call stack size exceeded" errors.</p>
+    
+    <h2>Fixed Issues:</h2>
+    <ul>
+        <li>Fixed $toastStore syntax in Toast.svelte (changed to toastStore.toasts)</li>
+        <li>Added proper toast auto-removal effect with untrack to prevent loops</li>
+        <li>Ensured all effects in +layout.svelte use proper initialization flags</li>
+    </ul>
+    
+    <h2>Things to Test:</h2>
+    <ol>
+        <li>Navigate to different pages</li>
+        <li>Trigger some toasts (login, errors, etc.)</li>
+        <li>Check console for any effect loop warnings</li>
+    </ol>
+</body>
+</html>

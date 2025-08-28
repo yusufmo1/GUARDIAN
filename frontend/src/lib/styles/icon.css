@@ -1,0 +1,51 @@
+/* Global icon styles */
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+/* Animation support for specific icons */
+.icon.spin {
+  animation: icon-spin 1s linear infinite;
+}
+
+.icon.pulse {
+  animation: icon-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Hover states for interactive icons */
+.icon.interactive {
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.1s ease;
+}
+
+.icon.interactive:hover {
+  transform: scale(1.05);
+}
+
+/* Focus states for accessibility */
+.icon:focus-visible {
+  outline: 2px solid var(--color-primary-500, #3b82f6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@keyframes icon-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes icon-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}

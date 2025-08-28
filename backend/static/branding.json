@@ -1,0 +1,149 @@
+{
+  "organization": {
+    "name": "Queen Mary University of London",
+    "department": "School of Biological and Chemical Sciences",
+    "website": "https://www.qmul.ac.uk",
+    "contact_email": "guardian-support@qmul.ac.uk"
+  },
+  "branding": {
+    "primary_color": "#003f5c",
+    "secondary_color": "#d62728", 
+    "accent_color": "#ff7f0e",
+    "success_color": "#28a745",
+    "warning_color": "#ffc107",
+    "danger_color": "#dc3545",
+    "light_background": "#f8f9fa",
+    "dark_background": "#2c3e50",
+    "text_primary": "#2c3e50",
+    "text_secondary": "#6c757d",
+    "text_muted": "#868e96"
+  },
+  "logos": {
+    "primary": {
+      "file": "qmul_logo.png",
+      "alt_text": "Queen Mary University of London",
+      "width": 200,
+      "height": 60,
+      "format": "PNG"
+    },
+    "secondary": {
+      "file": "ucb_logo.png", 
+      "alt_text": "UCB Pharma",
+      "width": 180,
+      "height": 50,
+      "format": "PNG"
+    },
+    "favicon": {
+      "file": "favicon.ico",
+      "sizes": ["16x16", "32x32", "48x48"],
+      "format": "ICO"
+    }
+  },
+  "typography": {
+    "primary_font": "Arial, 'Helvetica Neue', Helvetica, sans-serif",
+    "secondary_font": "'Times New Roman', Times, serif",
+    "monospace_font": "'Courier New', Courier, monospace",
+    "font_sizes": {
+      "xs": "0.75rem",
+      "sm": "0.875rem", 
+      "base": "1rem",
+      "lg": "1.125rem",
+      "xl": "1.25rem",
+      "2xl": "1.5rem",
+      "3xl": "1.875rem",
+      "4xl": "2.25rem",
+      "5xl": "3rem"
+    },
+    "line_heights": {
+      "tight": "1.25",
+      "normal": "1.5",
+      "relaxed": "1.75"
+    }
+  },
+  "layout": {
+    "max_width": "1200px",
+    "container_padding": "20px",
+    "border_radius": "8px",
+    "box_shadow": "0 4px 6px rgba(0, 0, 0, 0.1)",
+    "transition": "all 0.3s ease"
+  },
+  "report_templates": {
+    "compliance_report": {
+      "name": "Compliance Analysis Report",
+      "description": "Standard protocol compliance analysis with detailed findings",
+      "features": [
+        "Executive summary",
+        "Detailed analysis results", 
+        "Clustering visualization",
+        "Issue tracking",
+        "Recommendations",
+        "Professional branding"
+      ],
+      "supported_formats": ["pdf", "html", "json"]
+    },
+    "summary_report": {
+      "name": "Summary Report",
+      "description": "Concise overview of compliance analysis results",
+      "features": [
+        "Key metrics dashboard",
+        "Status overview",
+        "Quick insights",
+        "Compact layout"
+      ],
+      "supported_formats": ["pdf", "html"]
+    },
+    "executive_report": {
+      "name": "Executive Report", 
+      "description": "High-level summary for executive stakeholders",
+      "features": [
+        "Strategic overview",
+        "Key performance indicators",
+        "Risk assessment",
+        "Action items"
+      ],
+      "supported_formats": ["pdf", "html"]
+    }
+  },
+  "print_settings": {
+    "page_size": "A4",
+    "margins": "20mm",
+    "orientation": "portrait",
+    "color_mode": "color",
+    "print_background": true,
+    "optimize_for_print": true
+  },
+  "accessibility": {
+    "high_contrast_mode": false,
+    "font_size_adjustment": 1.0,
+    "keyboard_navigation": true,
+    "screen_reader_support": true,
+    "alt_text_required": true
+  },
+  "themes": {
+    "light": {
+      "background": "#ffffff",
+      "surface": "#f8f9fa",
+      "text": "#2c3e50",
+      "border": "#dee2e6"
+    },
+    "dark": {
+      "background": "#1a202c",
+      "surface": "#2d3748", 
+      "text": "#e2e8f0",
+      "border": "#4a5568"
+    },
+    "academic": {
+      "background": "#ffffff",
+      "surface": "#f7fafc",
+      "text": "#2d3748",
+      "border": "#e2e8f0",
+      "accent": "#3182ce"
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2025-06-25",
+    "maintained_by": "GUARDIAN Development Team",
+    "license": "MIT"
+  }
+}

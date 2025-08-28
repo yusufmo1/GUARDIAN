@@ -1,0 +1,364 @@
+# =============================================================================
+# Prometheus Recording Rules for GUARDIAN System
+# Pre-compute frequently used queries for better performance
+# =============================================================================
+
+groups:
+  # =============================================================================
+  # HTTP Request Metrics
+  # =============================================================================
+  - name: guardian.http.rules
+    interval: 30s
+    rules:
+      # Request rate per endpoint
+      - record: guardian:http_requests:rate5m
+        expr: rate(guardian_http_requests_total[5m])
+        labels:
+          metric_type: "rate"
+
+      # Request rate by status code
+      - record: guardian:http_requests_by_status:rate5m
+        expr: sum by (status, method, endpoint) (rate(guardian_http_requests_total[5m]))
+
+      # Success rate percentage
+      - record: guardian:http_success_rate:rate5m
+        expr: |
+          sum(rate(guardian_http_requests_total{status!~"5.."}[5m])) /
+          sum(rate(guardian_http_requests_total[5m])) * 100
+
+      # Error rate percentage
+      - record: guardian:http_error_rate:rate5m
+        expr: |
+          sum(rate(guardian_http_requests_total{status=~"5.."}[5m])) /
+          sum(rate(guardian_http_requests_total[5m])) * 100
+
+      # Response time percentiles
+      - record: guardian:http_request_duration:p50
+        expr: histogram_quantile(0.50, rate(guardian_http_request_duration_seconds_bucket[5m]))
+
+      - record: guardian:http_request_duration:p95
+        expr: histogram_quantile(0.95, rate(guardian_http_request_duration_seconds_bucket[5m]))
+
+      - record: guardian:http_request_duration:p99
+        expr: histogram_quantile(0.99, rate(guardian_http_request_duration_seconds_bucket[5m]))
+
+  # =============================================================================
+  # Analysis Performance Metrics
+  # =============================================================================
+  - name: guardian.analysis.rules
+    interval: 60s
+    rules:
+      # Analysis throughput
+      - record: guardian:analysis_throughput:rate5m
+        expr: rate(guardian_analysis_completed_total[5m])
+
+      # Analysis success rate
+      - record: guardian:analysis_success_rate:rate5m
+        expr: |
+          rate(guardian_analysis_completed_total[5m]) /
+          rate(guardian_analysis_started_total[5m]) * 100
+
+      # Analysis failure rate
+      - record: guardian:analysis_failure_rate:rate5m
+        expr: |
+          rate(guardian_analysis_failures_total[5m]) /
+          rate(guardian_analysis_started_total[5m]) * 100
+
+      # Average analysis duration
+      - record: guardian:analysis_duration:avg5m
+        expr: rate(guardian_analysis_duration_seconds_sum[5m]) / rate(guardian_analysis_duration_seconds_count[5m])
+
+      # Analysis duration percentiles
+      - record: guardian:analysis_duration:p50
+        expr: histogram_quantile(0.50, rate(guardian_analysis_duration_seconds_bucket[5m]))
+
+      - record: guardian:analysis_duration:p95
+        expr: histogram_quantile(0.95, rate(guardian_analysis_duration_seconds_bucket[5m]))
+
+      # Queue depth
+      - record: guardian:analysis_queue_depth:current
+        expr: guardian_analysis_queue_size
+
+      # Queue waiting time
+      - record: guardian:analysis_queue_wait_time:avg5m
+        expr: rate(guardian_analysis_queue_wait_seconds_sum[5m]) / rate(guardian_analysis_queue_wait_seconds_count[5m])
+
+  # =============================================================================
+  # Document Processing Metrics
+  # =============================================================================
+  - name: guardian.documents.rules
+    interval: 60s
+    rules:
+      # Document processing rate
+      - record: guardian:documents_processed:rate5m
+        expr: rate(guardian_documents_processed_total[5m])
+
+      # Document processing success rate
+      - record: guardian:documents_success_rate:rate5m
+        expr: |
+          rate(guardian_documents_processed_total{status="success"}[5m]) /
+          rate(guardian_documents_processed_total[5m]) * 100
+
+      # Average document size
+      - record: guardian:document_size:avg5m
+        expr: rate(guardian_document_size_bytes_sum[5m]) / rate(guardian_document_size_bytes_count[5m])
+
+      # Document processing duration percentiles
+      - record: guardian:document_processing_duration:p50
+        expr: histogram_quantile(0.50, rate(guardian_document_processing_duration_seconds_bucket[5m]))
+
+      - record: guardian:document_processing_duration:p95
+        expr: histogram_quantile(0.95, rate(guardian_document_processing_duration_seconds_bucket[5m]))
+
+      # Chunking metrics
+      - record: guardian:document_chunks:avg5m
+        expr: rate(guardian_document_chunks_created_sum[5m]) / rate(guardian_document_chunks_created_count[5m])
+
+  # =============================================================================
+  # Embedding and Vector DB Metrics
+  # =============================================================================
+  - name: guardian.embedding.rules
+    interval: 60s
+    rules:
+      # Embedding generation rate
+      - record: guardian:embeddings_generated:rate5m
+        expr: rate(guardian_embeddings_generated_total[5m])
+
+      # Embedding batch size
+      - record: guardian:embedding_batch_size:avg5m
+        expr: rate(guardian_embedding_batch_size_sum[5m]) / rate(guardian_embedding_batch_size_count[5m])
+
+      # Embedding generation time
+      - record: guardian:embedding_duration:avg5m
+        expr: rate(guardian_embedding_duration_seconds_sum[5m]) / rate(guardian_embedding_duration_seconds_count[5m])
+
+      # Vector search performance
+      - record: guardian:vector_search:rate5m
+        expr: rate(guardian_vector_searches_total[5m])
+
+      - record: guardian:vector_search_duration:p95
+        expr: histogram_quantile(0.95, rate(guardian_vector_search_duration_seconds_bucket[5m]))
+
+      # Vector index size
+      - record: guardian:vector_index_size:current
+        expr: guardian_vector_index_size_bytes
+
+      # Similarity score distribution
+      - record: guardian:similarity_score:avg5m
+        expr: rate(guardian_similarity_scores_sum[5m]) / rate(guardian_similarity_scores_count[5m])
+
+  # =============================================================================
+  # LLM Integration Metrics
+  # =============================================================================
+  - name: guardian.llm.rules
+    interval: 60s
+    rules:
+      # LLM request rate
+      - record: guardian:llm_requests:rate5m
+        expr: rate(guardian_llm_requests_total[5m])
+
+      # LLM success rate
+      - record: guardian:llm_success_rate:rate5m
+        expr: |
+          rate(guardian_llm_requests_total{status="success"}[5m]) /
+          rate(guardian_llm_requests_total[5m]) * 100
+
+      # LLM response time percentiles
+      - record: guardian:llm_response_duration:p50
+        expr: histogram_quantile(0.50, rate(guardian_llm_response_duration_seconds_bucket[5m]))
+
+      - record: guardian:llm_response_duration:p95
+        expr: histogram_quantile(0.95, rate(guardian_llm_response_duration_seconds_bucket[5m]))
+
+      # Token usage metrics
+      - record: guardian:llm_tokens_used:rate5m
+        expr: rate(guardian_llm_tokens_used_total[5m])
+
+      - record: guardian:llm_tokens_per_request:avg5m
+        expr: rate(guardian_llm_tokens_used_total[5m]) / rate(guardian_llm_requests_total[5m])
+
+  # =============================================================================
+  # Report Generation Metrics
+  # =============================================================================
+  - name: guardian.reports.rules
+    interval: 120s
+    rules:
+      # Report generation rate
+      - record: guardian:reports_generated:rate5m
+        expr: rate(guardian_reports_generated_total[5m])
+
+      # Report generation success rate
+      - record: guardian:reports_success_rate:rate5m
+        expr: |
+          rate(guardian_reports_generated_total{status="success"}[5m]) /
+          rate(guardian_reports_generated_total[5m]) * 100
+
+      # Report generation duration by format
+      - record: guardian:report_generation_duration_by_format:p95
+        expr: histogram_quantile(0.95, rate(guardian_report_generation_duration_seconds_bucket[5m])) by (format)
+
+      # Report size distribution
+      - record: guardian:report_size:avg5m
+        expr: rate(guardian_report_size_bytes_sum[5m]) / rate(guardian_report_size_bytes_count[5m])
+
+      # Report queue depth
+      - record: guardian:report_queue_depth:current
+        expr: guardian_report_queue_size
+
+  # =============================================================================
+  # Resource Utilization Rules
+  # =============================================================================
+  - name: guardian.resources.rules
+    interval: 30s
+    rules:
+      # Memory utilization percentage
+      - record: guardian:memory_utilization:percent
+        expr: |
+          (process_resident_memory_bytes{job="guardian-backend"} / 
+           on() node_memory_MemTotal_bytes) * 100
+
+      # CPU utilization percentage
+      - record: guardian:cpu_utilization:percent
+        expr: rate(process_cpu_seconds_total{job="guardian-backend"}[5m]) * 100
+
+      # Disk utilization for guardian directories
+      - record: guardian:disk_utilization:percent
+        expr: |
+          (1 - (node_filesystem_avail_bytes{mountpoint="/opt/guardian"} / 
+                node_filesystem_size_bytes{mountpoint="/opt/guardian"})) * 100
+
+      # Network I/O rates
+      - record: guardian:network_receive:rate5m
+        expr: rate(node_network_receive_bytes_total{device!~"lo|docker.*"}[5m])
+
+      - record: guardian:network_transmit:rate5m
+        expr: rate(node_network_transmit_bytes_total{device!~"lo|docker.*"}[5m])
+
+  # =============================================================================
+  # Business Intelligence Rules
+  # =============================================================================
+  - name: guardian.business.rules
+    interval: 300s  # 5 minutes
+    rules:
+      # Average compliance score
+      - record: guardian:compliance_score:avg15m
+        expr: avg_over_time(guardian_compliance_score[15m])
+
+      # Compliance score distribution
+      - record: guardian:compliance_score:p10
+        expr: quantile_over_time(0.10, guardian_compliance_score[1h])
+
+      - record: guardian:compliance_score:p50
+        expr: quantile_over_time(0.50, guardian_compliance_score[1h])
+
+      - record: guardian:compliance_score:p90
+        expr: quantile_over_time(0.90, guardian_compliance_score[1h])
+
+      # Protocol types analysis
+      - record: guardian:protocol_types:rate1h
+        expr: rate(guardian_protocols_analyzed_total[1h]) by (protocol_type)
+
+      # References found per analysis
+      - record: guardian:references_per_analysis:avg1h
+        expr: rate(guardian_references_found_total[1h]) / rate(guardian_analysis_completed_total[1h])
+
+      # Peak usage hours
+      - record: guardian:peak_usage:hourly
+        expr: avg_over_time(guardian:http_requests:rate5m[1h])
+
+  # =============================================================================
+  # SLA and Availability Rules
+  # =============================================================================
+  - name: guardian.sla.rules
+    interval: 60s
+    rules:
+      # Service availability (99.9% SLA target)
+      - record: guardian:availability:percent_24h
+        expr: |
+          (1 - (
+            sum(increase(up{job="guardian-backend"}[24h] == 0)) /
+            sum(increase(up{job="guardian-backend"}[24h]))
+          )) * 100
+
+      # Request success rate SLA (99.5% target)
+      - record: guardian:request_sla:percent_24h
+        expr: |
+          sum(increase(guardian_http_requests_total{status!~"5.."}[24h])) /
+          sum(increase(guardian_http_requests_total[24h])) * 100
+
+      # Response time SLA (95% under 2s)
+      - record: guardian:response_time_sla:percent_24h
+        expr: |
+          sum(increase(guardian_http_request_duration_seconds_bucket{le="2.0"}[24h])) /
+          sum(increase(guardian_http_request_duration_seconds_count[24h])) * 100
+
+      # Analysis completion SLA (95% under 30s)
+      - record: guardian:analysis_sla:percent_24h
+        expr: |
+          sum(increase(guardian_analysis_duration_seconds_bucket{le="30.0"}[24h])) /
+          sum(increase(guardian_analysis_duration_seconds_count[24h])) * 100
+
+  # =============================================================================
+  # Capacity Planning Rules
+  # =============================================================================
+  - name: guardian.capacity.rules
+    interval: 300s  # 5 minutes
+    rules:
+      # Projected storage growth (MB per day)
+      - record: guardian:storage_growth:mb_per_day
+        expr: |
+          increase(guardian_storage_used_bytes[24h]) / (1024 * 1024)
+
+      # Request volume trend (requests per day)
+      - record: guardian:request_volume:per_day
+        expr: sum(increase(guardian_http_requests_total[24h]))
+
+      # Analysis volume trend (analyses per day)
+      - record: guardian:analysis_volume:per_day
+        expr: sum(increase(guardian_analysis_completed_total[24h]))
+
+      # Document processing trend (documents per day)
+      - record: guardian:document_volume:per_day
+        expr: sum(increase(guardian_documents_processed_total[24h]))
+
+      # Peak concurrent users estimate
+      - record: guardian:concurrent_users:estimate
+        expr: |
+          max_over_time(
+            sum(rate(guardian_http_requests_total[5m])) / 
+            avg(guardian_requests_per_user_per_minute)
+          [1h])
+
+  # =============================================================================
+  # Health Score Composite Rules
+  # =============================================================================
+  - name: guardian.health.composite
+    interval: 60s
+    rules:
+      # Overall system health score (0-100)
+      - record: guardian:system_health:score
+        expr: |
+          (
+            guardian:availability:percent_24h * 0.3 +
+            guardian:request_sla:percent_24h * 0.25 +
+            guardian:response_time_sla:percent_24h * 0.25 +
+            guardian:analysis_sla:percent_24h * 0.2
+          )
+
+      # Performance health score
+      - record: guardian:performance_health:score
+        expr: |
+          (
+            (100 - guardian:http_request_duration:p95 * 10) * 0.4 +
+            (100 - guardian:analysis_duration:p95) * 0.3 +
+            guardian:llm_success_rate:rate5m * 0.3
+          )
+
+      # Resource health score
+      - record: guardian:resource_health:score
+        expr: |
+          (
+            (100 - guardian:memory_utilization:percent) * 0.4 +
+            (100 - guardian:cpu_utilization:percent) * 0.3 +
+            (100 - guardian:disk_utilization:percent) * 0.3
+          )

@@ -1,0 +1,1 @@
+export { protectedLoad as load } from '$lib/utils/protected-route';

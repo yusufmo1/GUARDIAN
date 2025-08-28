@@ -1,0 +1,1265 @@
+openapi: 3.0.3
+info:
+  title: GUARDIAN API
+  description: |
+    GUARDIAN Pharmaceutical Compliance Analysis API
+    
+    A comprehensive REST API for pharmaceutical protocol compliance analysis against European Pharmacopoeia standards.
+    The system provides document processing, vector similarity search, LLM-powered compliance analysis, and professional report generation.
+    
+    ## Features
+    
+    - **Protocol Analysis**: AI-powered compliance analysis against European Pharmacopoeia standards
+    - **Document Management**: Upload, process, and manage reference documents
+    - **Vector Search**: Similarity search across pharmacopoeia sections
+    - **Report Generation**: Professional PDF and HTML reports with visualizations
+    - **Batch Processing**: Handle multiple protocols and generate bulk reports
+    
+    ## Authentication
+    
+    Currently, the API operates without authentication in development mode. 
+    Production deployments should implement appropriate authentication mechanisms.
+    
+    ## Rate Limiting
+    
+    API endpoints are rate-limited to ensure system stability:
+    - Standard endpoints: 100 requests/minute
+    - Analysis endpoints: 10 requests/minute
+    - Upload endpoints: 20 requests/minute
+    
+    ## Error Handling
+    
+    The API uses standard HTTP status codes and returns detailed error information in JSON format.
+    
+  version: 1.0.0
+  contact:
+    name: GUARDIAN Support
+    email: guardian-support@qmul.ac.uk
+    url: https://github.com/guardian/api
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+  - url: https://api.guardian.qmul.ac.uk
+    description: Production server
+
+tags:
+  - name: Health
+    description: System health and status endpoints
+  - name: Analysis
+    description: Protocol compliance analysis endpoints
+  - name: Documents
+    description: Document management and processing
+  - name: Search
+    description: Vector similarity search endpoints
+  - name: Reports
+    description: Report generation and management
+
+paths:
+  # Health Endpoints
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Basic health check
+      description: Returns basic system health status
+      operationId: getHealth
+      responses:
+        '200':
+          description: System is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "healthy"
+                timestamp: "2025-06-25T12:00:00Z"
+                version: "1.0.0"
+
+  /api/health/detailed:
+    get:
+      tags: [Health]
+      summary: Detailed health check
+      description: Returns comprehensive system health information including component status
+      operationId: getDetailedHealth
+      responses:
+        '200':
+          description: Detailed system health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DetailedHealthResponse'
+
+  /api/health/dependencies:
+    get:
+      tags: [Health]
+      summary: Dependencies health check
+      description: Returns health status of external dependencies
+      operationId: getDependenciesHealth
+      responses:
+        '200':
+          description: Dependencies health information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DependenciesHealthResponse'
+
+  # Analysis Endpoints
+  /api/analyze:
+    post:
+      tags: [Analysis]
+      summary: Analyze protocol compliance
+      description: |
+        Analyzes a pharmaceutical protocol against European Pharmacopoeia standards.
+        Returns detailed compliance analysis with recommendations and reference citations.
+      operationId: analyzeProtocol
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalysisRequest'
+            example:
+              protocol_text: "Dissolve 10mg of substance in 100ml distilled water. Heat to 60°C and maintain for 30 minutes."
+              analysis_type: "comprehensive"
+              include_references: true
+              include_clustering: true
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analyze/{analysis_id}:
+    get:
+      tags: [Analysis]
+      summary: Get analysis results
+      description: Retrieves the results of a previously completed analysis
+      operationId: getAnalysisResults
+      parameters:
+        - name: analysis_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique analysis identifier
+      responses:
+        '200':
+          description: Analysis results retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisResponse'
+        '404':
+          description: Analysis not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/analyze/batch:
+    post:
+      tags: [Analysis]
+      summary: Batch protocol analysis
+      description: Analyzes multiple protocols simultaneously
+      operationId: batchAnalyzeProtocols
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchAnalysisRequest'
+      responses:
+        '200':
+          description: Batch analysis initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAnalysisResponse'
+
+  /api/analyze/history:
+    get:
+      tags: [Analysis]
+      summary: Get analysis history
+      description: Retrieves paginated history of previous analyses
+      operationId: getAnalysisHistory
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Analysis history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalysisHistoryResponse'
+
+  # Document Management Endpoints
+  /api/documents/upload:
+    post:
+      tags: [Documents]
+      summary: Upload reference document
+      description: |
+        Uploads a reference document (PDF, DOCX, or TXT) for processing and indexing.
+        Supported formats: PDF, DOCX, TXT. Maximum file size: 100MB.
+      operationId: uploadDocument
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentUploadRequest'
+      responses:
+        '201':
+          description: Document uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentUploadResponse'
+        '400':
+          description: Invalid file or request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/documents:
+    get:
+      tags: [Documents]
+      summary: List documents
+      description: Retrieves a paginated list of uploaded documents
+      operationId: listDocuments
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed]
+      responses:
+        '200':
+          description: Documents retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentListResponse'
+
+  /api/documents/{doc_id}:
+    get:
+      tags: [Documents]
+      summary: Get document information
+      description: Retrieves detailed information about a specific document
+      operationId: getDocument
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Document information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags: [Documents]
+      summary: Delete document
+      description: Deletes a document and removes it from the vector index
+      operationId: deleteDocument
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Document deleted successfully
+        '404':
+          description: Document not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/documents/{doc_id}/process:
+    post:
+      tags: [Documents]
+      summary: Process document
+      description: Initiates processing of an uploaded document for indexing
+      operationId: processDocument
+      parameters:
+        - name: doc_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '202':
+          description: Document processing initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProcessingResponse'
+
+  # Search Endpoints
+  /api/search:
+    post:
+      tags: [Search]
+      summary: Search pharmacopoeia sections
+      description: Performs vector similarity search across indexed pharmacopoeia sections
+      operationId: searchSections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+  /api/search/suggestions:
+    get:
+      tags: [Search]
+      summary: Get search suggestions
+      description: Provides search query suggestions based on indexed content
+      operationId: getSearchSuggestions
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+      responses:
+        '200':
+          description: Search suggestions retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchSuggestionsResponse'
+
+  /api/search/multi-index:
+    post:
+      tags: [Search]
+      summary: Multi-index search
+      description: Searches across multiple vector indices simultaneously
+      operationId: multiIndexSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MultiIndexSearchRequest'
+      responses:
+        '200':
+          description: Multi-index search completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultiIndexSearchResponse'
+
+  /api/search/analytics:
+    get:
+      tags: [Search]
+      summary: Get search analytics
+      description: Retrieves search usage analytics and statistics
+      operationId: getSearchAnalytics
+      responses:
+        '200':
+          description: Search analytics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchAnalyticsResponse'
+
+  # Report Generation Endpoints
+  /api/reports/generate:
+    post:
+      tags: [Reports]
+      summary: Generate compliance report
+      description: |
+        Generates a compliance analysis report in the specified format.
+        Supports PDF, HTML, and JSON formats with customizable templates.
+      operationId: generateReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportGenerationRequest'
+      responses:
+        '201':
+          description: Report generation initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportGenerationResponse'
+
+  /api/reports/{report_id}:
+    get:
+      tags: [Reports]
+      summary: Download report
+      description: Downloads a generated report file
+      operationId: downloadReport
+      parameters:
+        - name: report_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Report downloaded successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            application/json:
+              schema:
+                type: object
+            text/html:
+              schema:
+                type: string
+
+    delete:
+      tags: [Reports]
+      summary: Delete report
+      description: Deletes a generated report file
+      operationId: deleteReport
+      parameters:
+        - name: report_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Report deleted successfully
+
+  /api/reports:
+    get:
+      tags: [Reports]
+      summary: List reports
+      description: Retrieves a paginated list of generated reports
+      operationId: listReports
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [pdf, html, json]
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportListResponse'
+
+  /api/reports/batch:
+    post:
+      tags: [Reports]
+      summary: Generate batch reports
+      description: Generates multiple reports simultaneously
+      operationId: generateBatchReports
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchReportGenerationRequest'
+      responses:
+        '202':
+          description: Batch report generation initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchReportGenerationResponse'
+
+  /api/reports/templates:
+    get:
+      tags: [Reports]
+      summary: Get available report templates
+      description: Retrieves a list of available report templates
+      operationId: getReportTemplates
+      responses:
+        '200':
+          description: Report templates retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportTemplatesResponse'
+
+  /api/reports/stats:
+    get:
+      tags: [Reports]
+      summary: Get report statistics
+      description: Retrieves report generation statistics and metrics
+      operationId: getReportStats
+      responses:
+        '200':
+          description: Report statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportStatsResponse'
+
+components:
+  schemas:
+    # Base Schemas
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type identifier
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          description: Additional error details
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+
+    # Health Schemas
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+        uptime:
+          type: number
+          description: Uptime in seconds
+
+    DetailedHealthResponse:
+      allOf:
+        - $ref: '#/components/schemas/HealthResponse'
+        - type: object
+          properties:
+            components:
+              type: object
+              properties:
+                embedding_model:
+                  $ref: '#/components/schemas/ComponentHealth'
+                vector_db:
+                  $ref: '#/components/schemas/ComponentHealth'
+                llm_client:
+                  $ref: '#/components/schemas/ComponentHealth'
+                storage:
+                  $ref: '#/components/schemas/ComponentHealth'
+
+    ComponentHealth:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        message:
+          type: string
+        last_check:
+          type: string
+          format: date-time
+
+    DependenciesHealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        dependencies:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ComponentHealth'
+
+    # Analysis Schemas
+    AnalysisRequest:
+      type: object
+      required:
+        - protocol_text
+      properties:
+        protocol_text:
+          type: string
+          description: The pharmaceutical protocol text to analyze
+          minLength: 10
+          maxLength: 50000
+        analysis_type:
+          type: string
+          enum: [quick, standard, comprehensive]
+          default: standard
+          description: Depth of analysis to perform
+        include_references:
+          type: boolean
+          default: true
+          description: Include European Pharmacopoeia references
+        include_clustering:
+          type: boolean
+          default: false
+          description: Include clustering analysis in results
+        similarity_threshold:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.7
+          description: Minimum similarity threshold for references
+
+    AnalysisResponse:
+      type: object
+      required:
+        - analysis_id
+        - status
+        - protocol_text
+        - compliance_score
+        - findings
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [completed, failed, processing]
+        protocol_text:
+          type: string
+        compliance_score:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          description: Overall compliance score (0-1)
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComplianceFinding'
+        references:
+          type: array
+          items:
+            $ref: '#/components/schemas/PharmacoPoeiaReference'
+        clustering_analysis:
+          $ref: '#/components/schemas/ClusteringAnalysis'
+        created_at:
+          type: string
+          format: date-time
+        processing_time:
+          type: number
+          description: Processing time in seconds
+
+    ComplianceFinding:
+      type: object
+      required:
+        - type
+        - severity
+        - message
+      properties:
+        type:
+          type: string
+          enum: [compliance_issue, recommendation, best_practice, critical_error]
+        severity:
+          type: string
+          enum: [low, medium, high, critical]
+        message:
+          type: string
+        section:
+          type: string
+          description: Protocol section where finding was identified
+        references:
+          type: array
+          items:
+            type: string
+          description: Related pharmacopoeia section references
+
+    PharmacoPoeiaReference:
+      type: object
+      required:
+        - section_id
+        - title
+        - similarity_score
+      properties:
+        section_id:
+          type: string
+        title:
+          type: string
+        similarity_score:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+        content_excerpt:
+          type: string
+        chapter:
+          type: string
+        page_number:
+          type: integer
+
+    ClusteringAnalysis:
+      type: object
+      properties:
+        cluster_id:
+          type: integer
+        cluster_size:
+          type: integer
+        similar_protocols:
+          type: array
+          items:
+            type: string
+        visualization_url:
+          type: string
+          format: uri
+
+    BatchAnalysisRequest:
+      type: object
+      required:
+        - protocols
+      properties:
+        protocols:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalysisRequest'
+          minItems: 1
+          maxItems: 10
+        batch_name:
+          type: string
+          description: Optional name for the batch
+
+    BatchAnalysisResponse:
+      type: object
+      required:
+        - batch_id
+        - status
+        - total_protocols
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [initiated, processing, completed, failed]
+        total_protocols:
+          type: integer
+        analysis_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    AnalysisHistoryResponse:
+      type: object
+      required:
+        - analyses
+        - pagination
+      properties:
+        analyses:
+          type: array
+          items:
+            $ref: '#/components/schemas/AnalysisResponse'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    # Document Schemas
+    DocumentUploadRequest:
+      type: object
+      required:
+        - file
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Document file (PDF, DOCX, or TXT)
+        document_type:
+          type: string
+          enum: [pharmacopoeia, protocol, reference]
+          default: reference
+        metadata:
+          type: object
+          description: Additional document metadata
+
+    DocumentUploadResponse:
+      type: object
+      required:
+        - document_id
+        - filename
+        - status
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        file_size:
+          type: integer
+          description: File size in bytes
+        status:
+          type: string
+          enum: [uploaded, processing, completed, failed]
+        uploaded_at:
+          type: string
+          format: date-time
+
+    DocumentResponse:
+      type: object
+      required:
+        - document_id
+        - filename
+        - status
+      properties:
+        document_id:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        file_size:
+          type: integer
+        document_type:
+          type: string
+        status:
+          type: string
+          enum: [uploaded, processing, completed, failed]
+        processing_stats:
+          $ref: '#/components/schemas/ProcessingStats'
+        uploaded_at:
+          type: string
+          format: date-time
+        processed_at:
+          type: string
+          format: date-time
+
+    ProcessingStats:
+      type: object
+      properties:
+        total_chunks:
+          type: integer
+        total_pages:
+          type: integer
+        processing_time:
+          type: number
+          description: Processing time in seconds
+        embedding_count:
+          type: integer
+
+    DocumentListResponse:
+      type: object
+      required:
+        - documents
+        - pagination
+      properties:
+        documents:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentResponse'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    ProcessingResponse:
+      type: object
+      required:
+        - message
+        - status
+      properties:
+        message:
+          type: string
+        status:
+          type: string
+          enum: [initiated, processing]
+        estimated_completion:
+          type: string
+          format: date-time
+
+    # Search Schemas
+    SearchRequest:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Search query text
+          minLength: 2
+          maxLength: 1000
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+          description: Number of results to return
+        similarity_threshold:
+          type: number
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.5
+        filters:
+          type: object
+          description: Search filters
+          properties:
+            document_type:
+              type: string
+            chapter:
+              type: string
+
+    SearchResponse:
+      type: object
+      required:
+        - results
+        - query
+        - total_results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        query:
+          type: string
+        total_results:
+          type: integer
+        search_time:
+          type: number
+          description: Search time in seconds
+
+    SearchResult:
+      type: object
+      required:
+        - id
+        - similarity_score
+        - content
+      properties:
+        id:
+          type: string
+        similarity_score:
+          type: number
+        content:
+          type: string
+        metadata:
+          type: object
+        document_id:
+          type: string
+
+    SearchSuggestionsResponse:
+      type: object
+      required:
+        - suggestions
+      properties:
+        suggestions:
+          type: array
+          items:
+            type: string
+        query:
+          type: string
+
+    MultiIndexSearchRequest:
+      type: object
+      required:
+        - query
+        - indices
+      properties:
+        query:
+          type: string
+        indices:
+          type: array
+          items:
+            type: string
+        top_k:
+          type: integer
+          default: 10
+
+    MultiIndexSearchResponse:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/SearchResult'
+
+    SearchAnalyticsResponse:
+      type: object
+      properties:
+        total_searches:
+          type: integer
+        popular_queries:
+          type: array
+          items:
+            type: object
+            properties:
+              query:
+                type: string
+              count:
+                type: integer
+        average_response_time:
+          type: number
+
+    # Report Schemas
+    ReportGenerationRequest:
+      type: object
+      required:
+        - analysis_id
+        - format
+      properties:
+        analysis_id:
+          type: string
+          format: uuid
+        format:
+          type: string
+          enum: [pdf, html, json]
+        template:
+          type: string
+          enum: [compliance_report, summary_report, executive_report]
+          default: compliance_report
+        options:
+          type: object
+          properties:
+            include_clustering:
+              type: boolean
+              default: false
+            include_visualizations:
+              type: boolean
+              default: true
+            branding:
+              type: object
+              properties:
+                organization_name:
+                  type: string
+                logo:
+                  type: string
+
+    ReportGenerationResponse:
+      type: object
+      required:
+        - report_id
+        - status
+      properties:
+        report_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [generating, completed, failed]
+        format:
+          type: string
+        estimated_completion:
+          type: string
+          format: date-time
+        download_url:
+          type: string
+          format: uri
+
+    ReportListResponse:
+      type: object
+      required:
+        - reports
+        - pagination
+      properties:
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportInfo'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    ReportInfo:
+      type: object
+      required:
+        - report_id
+        - format
+        - status
+      properties:
+        report_id:
+          type: string
+          format: uuid
+        format:
+          type: string
+        status:
+          type: string
+        file_size:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        download_url:
+          type: string
+          format: uri
+
+    BatchReportGenerationRequest:
+      type: object
+      required:
+        - requests
+      properties:
+        requests:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportGenerationRequest'
+          minItems: 1
+          maxItems: 10
+
+    BatchReportGenerationResponse:
+      type: object
+      required:
+        - batch_id
+        - report_ids
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+        report_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        status:
+          type: string
+
+    ReportTemplatesResponse:
+      type: object
+      required:
+        - templates
+      properties:
+        templates:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              supported_formats:
+                type: array
+                items:
+                  type: string
+
+    ReportStatsResponse:
+      type: object
+      properties:
+        total_reports:
+          type: integer
+        reports_by_format:
+          type: object
+          additionalProperties:
+            type: integer
+        average_generation_time:
+          type: number
+
+    # Utility Schemas
+    Pagination:
+      type: object
+      required:
+        - page
+        - per_page
+        - total
+        - pages
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        per_page:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+        pages:
+          type: integer
+          minimum: 0
+        has_next:
+          type: boolean
+        has_prev:
+          type: boolean
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []

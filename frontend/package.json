@@ -1,0 +1,43 @@
+{
+  "name": "guardian-frontend",
+  "version": "1.0.0",
+  "description": "GUARDIAN pharmaceutical compliance analysis frontend",
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "^3.0.8",
+    "@sveltejs/kit": "^2.22.2",
+    "@types/node": "^24.0.4",
+    "svelte": "^5.34.7",
+    "svelte-check": "^4.0.0",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  },
+  "keywords": [
+    "pharmaceutical",
+    "compliance",
+    "analysis",
+    "svelte"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@sveltejs/adapter-static": "^3.0.8",
+    "@sveltejs/kit": "^2.22.2",
+    "@types/dompurify": "^3.0.5",
+    "@types/node": "^24.0.4",
+    "dompurify": "^3.2.6",
+    "lucide-svelte": "^0.523.0",
+    "plotly.js-dist-min": "^3.0.1",
+    "svelte": "^5.34.7",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

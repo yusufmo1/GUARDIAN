@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="50" viewBox="0 0 180 50">
+  <!-- Background -->
+  <rect width="180" height="50" fill="#d62728" rx="5"/>
+  
+  <!-- Molecule icon -->
+  <g transform="translate(15, 15)">
+    <!-- Benzene ring structure -->
+    <polygon points="10,5 20,5 25,13 20,21 10,21 5,13" fill="none" stroke="white" stroke-width="2"/>
+    <!-- Atoms -->
+    <circle cx="10" cy="5" r="2" fill="white"/>
+    <circle cx="20" cy="5" r="2" fill="white"/>
+    <circle cx="25" cy="13" r="2" fill="white"/>
+    <circle cx="20" cy="21" r="2" fill="white"/>
+    <circle cx="10" cy="21" r="2" fill="white"/>
+    <circle cx="5" cy="13" r="2" fill="white"/>
+  </g>
+  
+  <!-- UCB text -->
+  <text x="50" y="22" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="white">
+    UCB
+  </text>
+  <text x="50" y="35" font-family="Arial, sans-serif" font-size="10" fill="white">
+    PHARMA
+  </text>
+  
+  <!-- Tagline -->
+  <text x="100" y="30" font-family="Arial, sans-serif" font-size="8" fill="rgba(255,255,255,0.8)">
+    Inspired by patients. Driven by science.
+  </text>
+  
+  <!-- Decorative border -->
+  <rect x="2" y="2" width="176" height="46" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1" rx="3"/>
+</svg>

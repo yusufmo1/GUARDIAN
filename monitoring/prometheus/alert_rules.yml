@@ -1,0 +1,339 @@
+# =============================================================================
+# Prometheus Alert Rules for GUARDIAN System
+# =============================================================================
+
+groups:
+  # =============================================================================
+  # System Health Alerts
+  # =============================================================================
+  - name: guardian.system.health
+    interval: 30s
+    rules:
+      - alert: GuardianServiceDown
+        expr: up{job="guardian-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: guardian
+          component: backend
+        annotations:
+          summary: "GUARDIAN backend service is down"
+          description: "The GUARDIAN backend service has been down for more than 1 minute."
+          runbook_url: "https://docs.guardian.qmul.ac.uk/runbooks/service-down"
+
+      - alert: GuardianHighResponseTime
+        expr: guardian_http_request_duration_seconds{quantile="0.95"} > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: guardian
+          component: api
+        annotations:
+          summary: "GUARDIAN API response time is high"
+          description: "95th percentile response time is {{ $value }}s for the last 5 minutes."
+          
+      - alert: GuardianHealthCheckFailing
+        expr: guardian_health_status < 1
+        for: 2m
+        labels:
+          severity: warning
+          service: guardian
+          component: health
+        annotations:
+          summary: "GUARDIAN health check is failing"
+          description: "Health check status is {{ $value }}. System may be degraded."
+
+  # =============================================================================
+  # Application-Specific Alerts
+  # =============================================================================
+  - name: guardian.application.performance
+    interval: 60s
+    rules:
+      - alert: GuardianAnalysisQueueHigh
+        expr: guardian_analysis_queue_size > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: guardian
+          component: analysis
+        annotations:
+          summary: "GUARDIAN analysis queue is backing up"
+          description: "Analysis queue has {{ $value }} pending requests for 5 minutes."
+
+      - alert: GuardianAnalysisFailureRate
+        expr: rate(guardian_analysis_failures_total[5m]) / rate(guardian_analysis_total[5m]) > 0.1
+        for: 3m
+        labels:
+          severity: critical
+          service: guardian
+          component: analysis
+        annotations:
+          summary: "High analysis failure rate detected"
+          description: "Analysis failure rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: GuardianEmbeddingModelUnavailable
+        expr: guardian_embedding_model_status == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: guardian
+          component: ml
+        annotations:
+          summary: "Embedding model is unavailable"
+          description: "The sentence transformer embedding model is not responding."
+
+      - alert: GuardianVectorDBErrors
+        expr: rate(guardian_vectordb_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: guardian
+          component: vectordb
+        annotations:
+          summary: "Vector database errors detected"
+          description: "Vector DB error rate is {{ $value }} errors/second over 5 minutes."
+
+      - alert: GuardianLLMTimeout
+        expr: rate(guardian_llm_timeout_total[10m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          service: guardian
+          component: llm
+        annotations:
+          summary: "LLM requests timing out frequently"
+          description: "LLM timeout rate is {{ $value }} timeouts/second over 10 minutes."
+
+  # =============================================================================
+  # Resource Usage Alerts
+  # =============================================================================
+  - name: guardian.resources
+    interval: 30s
+    rules:
+      - alert: GuardianHighMemoryUsage
+        expr: (process_resident_memory_bytes{job="guardian-backend"} / node_memory_MemTotal_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: guardian
+          component: memory
+        annotations:
+          summary: "GUARDIAN memory usage is high"
+          description: "Memory usage is {{ $value }}% for the last 5 minutes."
+
+      - alert: GuardianHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="guardian-backend"}[5m]) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          service: guardian
+          component: cpu
+        annotations:
+          summary: "GUARDIAN CPU usage is high"
+          description: "CPU usage is {{ $value }}% for the last 10 minutes."
+
+      - alert: GuardianDiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/opt/guardian"} / node_filesystem_size_bytes{mountpoint="/opt/guardian"}) * 100 < 20
+        for: 1m
+        labels:
+          severity: warning
+          service: guardian
+          component: storage
+        annotations:
+          summary: "GUARDIAN disk space is low"
+          description: "Available disk space is {{ $value }}% on /opt/guardian."
+
+      - alert: GuardianDiskSpaceCritical
+        expr: (node_filesystem_avail_bytes{mountpoint="/opt/guardian"} / node_filesystem_size_bytes{mountpoint="/opt/guardian"}) * 100 < 10
+        for: 1m
+        labels:
+          severity: critical
+          service: guardian
+          component: storage
+        annotations:
+          summary: "GUARDIAN disk space is critically low"
+          description: "Available disk space is {{ $value }}% on /opt/guardian."
+
+  # =============================================================================
+  # Data Processing Alerts
+  # =============================================================================
+  - name: guardian.data.processing
+    interval: 60s
+    rules:
+      - alert: GuardianDocumentProcessingStalled
+        expr: increase(guardian_documents_processed_total[30m]) == 0 and guardian_documents_pending > 0
+        for: 30m
+        labels:
+          severity: warning
+          service: guardian
+          component: documents
+        annotations:
+          summary: "Document processing appears stalled"
+          description: "No documents processed in 30 minutes but {{ $value }} are pending."
+
+      - alert: GuardianReportGenerationBacklog
+        expr: guardian_reports_pending > 20
+        for: 10m
+        labels:
+          severity: warning
+          service: guardian
+          component: reports
+        annotations:
+          summary: "Report generation backlog detected"
+          description: "{{ $value }} reports are pending generation for 10 minutes."
+
+      - alert: GuardianLargeFileUpload
+        expr: guardian_upload_size_bytes > 104857600  # 100MB
+        for: 0m
+        labels:
+          severity: info
+          service: guardian
+          component: upload
+        annotations:
+          summary: "Large file upload detected"
+          description: "File upload of {{ $value | humanizeBytes }} detected."
+
+  # =============================================================================
+  # Business Logic Alerts
+  # =============================================================================
+  - name: guardian.compliance
+    interval: 300s  # 5 minutes
+    rules:
+      - alert: GuardianLowComplianceScores
+        expr: avg_over_time(guardian_compliance_score[1h]) < 0.7
+        for: 30m
+        labels:
+          severity: info
+          service: guardian
+          component: compliance
+        annotations:
+          summary: "Average compliance scores are low"
+          description: "Average compliance score is {{ $value }} over the last hour."
+
+      - alert: GuardianPharmacoPoeiaReferencesLow
+        expr: guardian_pharmacopoeia_references_found < 3
+        for: 0m
+        labels:
+          severity: info
+          service: guardian
+          component: references
+        annotations:
+          summary: "Few pharmacopoeia references found"
+          description: "Only {{ $value }} references found in recent analysis."
+
+  # =============================================================================
+  # Security and Monitoring Alerts
+  # =============================================================================
+  - name: guardian.security
+    interval: 60s
+    rules:
+      - alert: GuardianHighErrorRate
+        expr: rate(guardian_http_requests_total{status=~"5.."}[5m]) / rate(guardian_http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: guardian
+          component: api
+        annotations:
+          summary: "High error rate detected"
+          description: "HTTP 5xx error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      - alert: GuardianUnusualTrafficSpike
+        expr: rate(guardian_http_requests_total[5m]) > 2 * avg_over_time(rate(guardian_http_requests_total[5m])[4h] offset 1h)
+        for: 3m
+        labels:
+          severity: warning
+          service: guardian
+          component: api
+        annotations:
+          summary: "Unusual traffic spike detected"
+          description: "Request rate is {{ $value }} req/sec, significantly higher than normal."
+
+      - alert: GuardianRedisConnectionFailures
+        expr: rate(guardian_redis_connection_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: warning
+          service: guardian
+          component: redis
+        annotations:
+          summary: "Redis connection failures detected"
+          description: "Redis connection error rate is {{ $value }} errors/second."
+
+  # =============================================================================
+  # Infrastructure Alerts
+  # =============================================================================
+  - name: guardian.infrastructure
+    interval: 30s
+    rules:
+      - alert: NodeExporterDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: monitoring
+          component: node-exporter
+        annotations:
+          summary: "Node exporter is down"
+          description: "Node exporter has been down for more than 1 minute."
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis service has been down for more than 1 minute."
+
+      - alert: PrometheusTargetDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: monitoring
+          component: prometheus
+        annotations:
+          summary: "Prometheus target is down"
+          description: "Target {{ $labels.instance }} of job {{ $labels.job }} has been down for more than 2 minutes."
+
+  # =============================================================================
+  # Performance Degradation Alerts
+  # =============================================================================
+  - name: guardian.performance
+    interval: 120s  # 2 minutes
+    rules:
+      - alert: GuardianSlowAnalysis
+        expr: histogram_quantile(0.95, rate(guardian_analysis_duration_seconds_bucket[10m])) > 60
+        for: 5m
+        labels:
+          severity: warning
+          service: guardian
+          component: performance
+        annotations:
+          summary: "Protocol analysis is taking too long"
+          description: "95th percentile analysis time is {{ $value }}s over the last 10 minutes."
+
+      - alert: GuardianEmbeddingSlowdown
+        expr: histogram_quantile(0.95, rate(guardian_embedding_duration_seconds_bucket[10m])) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: guardian
+          component: embedding
+        annotations:
+          summary: "Embedding generation is slow"
+          description: "95th percentile embedding time is {{ $value }}s over the last 10 minutes."
+
+      - alert: GuardianReportGenerationSlow
+        expr: histogram_quantile(0.95, rate(guardian_report_generation_duration_seconds_bucket[15m])) > 120
+        for: 10m
+        labels:
+          severity: warning
+          service: guardian
+          component: reports
+        annotations:
+          summary: "Report generation is slow"
+          description: "95th percentile report generation time is {{ $value }}s over the last 15 minutes."
